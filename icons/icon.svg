@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Quick the orca breaching out of the water">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4e80a2"></stop>
+      <stop offset="1" stop-color="#b8d6de"></stop>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b93a5"></stop>
+      <stop offset="1" stop-color="#0b3448"></stop>
+    </linearGradient>
+  </defs>
+
+  <!-- sky -->
+  <rect x="0" y="0" width="512" height="330" fill="url(#sky)"></rect>
+  <g>
+    <polygon points="0,0 150,0 0,120" fill="#000" opacity=".06"></polygon>
+    <polygon points="150,0 0,120 120,150" fill="#fff" opacity=".05"></polygon>
+    <polygon points="150,0 330,0 120,150" fill="#000" opacity=".03"></polygon>
+    <polygon points="330,0 120,150 290,170" fill="#fff" opacity=".06"></polygon>
+    <polygon points="330,0 512,0 290,170" fill="#000" opacity=".05"></polygon>
+    <polygon points="512,0 290,170 512,140" fill="#fff" opacity=".04"></polygon>
+    <polygon points="0,120 120,150 0,260" fill="#000" opacity=".03"></polygon>
+    <polygon points="120,150 0,260 160,250" fill="#fff" opacity=".07"></polygon>
+    <polygon points="120,150 290,170 160,250" fill="#000" opacity=".04"></polygon>
+    <polygon points="290,170 160,250 330,262" fill="#fff" opacity=".05"></polygon>
+    <polygon points="290,170 512,140 330,262" fill="#fff" opacity=".08"></polygon>
+    <polygon points="512,140 330,262 512,250" fill="#000" opacity=".03"></polygon>
+  </g>
+
+  <!-- sun -->
+  <polygon points="400,78 428,94 428,126 400,142 372,126 372,94" fill="#f6ead0" opacity=".92"></polygon>
+  <polygon points="400,78 428,94 400,110" fill="#fff8e8" opacity=".9"></polygon>
+  <polygon points="372,126 400,142 400,110" fill="#e8d6b0" opacity=".8"></polygon>
+
+  <!-- distant islands -->
+  <polygon points="0,322 0,292 40,284 70,300" fill="#4f7d8e"></polygon>
+  <polygon points="40,284 90,262 130,292 70,300" fill="#5b899a"></polygon>
+  <polygon points="70,300 130,292 175,322 0,322" fill="#436f7f"></polygon>
+  <polygon points="300,322 350,280 392,296" fill="#5b899a"></polygon>
+  <polygon points="350,280 392,296 440,262 470,284" fill="#4f7d8e"></polygon>
+  <polygon points="392,296 470,284 512,276 512,322 300,322" fill="#436f7f"></polygon>
+
+  <!-- sea -->
+  <rect x="0" y="320" width="512" height="192" fill="url(#sea)"></rect>
+
+  <!-- Quick the orca, breaching -->
+  <g transform="translate(256 250) rotate(-55) scale(2.8)">
+    <polygon points="-46,-3 -66,-8 -60,3.6 -66,18 -46,3" fill="#11141a"></polygon>
+    <polygon points="-46,-3 -66,-8 -60,3.6" fill="#2a303b"></polygon>
+    <polygon points="50,1 40,9 20,15 -10,16 -36,10 -48,3 -48,0" fill="#0f1218"></polygon>
+    <polygon points="50,1 38,-12 15,-19 -15,-17 -38,-9 -48,-3 -48,0" fill="#1c212b"></polygon>
+    <polygon points="38,-12 15,-19 12,-4" fill="#2d3440"></polygon>
+    <polygon points="15,-19 -15,-17 -2,-6" fill="#262c37"></polygon>
+    <polygon points="-15,-17 -38,-9 -20,-3" fill="#20252f"></polygon>
+    <polygon points="46,5 40,9 20,15 -10,16 -26,11 2,9 28,6" fill="#eef4f2"></polygon>
+    <polygon points="20,15 -10,16 2,9" fill="#d2dfdd"></polygon>
+    <polygon points="31,-8 24,-11 14,-8 18,-4 27,-4" fill="#eef4f2"></polygon>
+    <polygon points="-4,-16 -22,-14 -18,-10 -6,-12" fill="#8d97a3"></polygon>
+    <polygon points="2,-17 -12,-46 -20,-15" fill="#14171e"></polygon>
+    <polygon points="2,-17 -12,-46 -6,-17" fill="#2d3440"></polygon>
+    <polygon points="14,11 4,30 -6,13" fill="#0b0d12"></polygon>
+    <rect x="34" y="-5" width="3" height="3" fill="#000"></rect>
+  </g>
+
+  <!-- water over the submerged tail -->
+  <rect x="0" y="326" width="512" height="186" fill="#1f7f93" opacity=".62"></rect>
+  <g>
+    <polygon points="0,330 130,330 60,420" fill="#fff" opacity=".05"></polygon>
+    <polygon points="130,330 60,420 210,410" fill="#000" opacity=".06"></polygon>
+    <polygon points="130,330 300,330 210,410" fill="#fff" opacity=".04"></polygon>
+    <polygon points="300,330 210,410 360,430" fill="#000" opacity=".05"></polygon>
+    <polygon points="300,330 512,330 360,430" fill="#fff" opacity=".05"></polygon>
+    <polygon points="512,330 360,430 512,440" fill="#000" opacity=".07"></polygon>
+    <polygon points="0,330 60,420 0,512" fill="#000" opacity=".08"></polygon>
+    <polygon points="60,420 0,512 220,512" fill="#000" opacity=".1"></polygon>
+    <polygon points="60,420 210,410 220,512" fill="#000" opacity=".05"></polygon>
+    <polygon points="210,410 360,430 220,512" fill="#000" opacity=".09"></polygon>
+    <polygon points="360,430 220,512 512,512" fill="#000" opacity=".12"></polygon>
+  </g>
+
+  <!-- wave line -->
+  <polygon points="0,320 60,327 120,317 180,327 240,318 300,328 360,317 420,327 480,318 512,322 512,334 0,334" fill="#3aa7b6"></polygon>
+  <polyline points="0,320 60,327 120,317 180,327 240,318 300,328 360,317 420,327 480,318 512,322" fill="none" stroke="#e9f5f2" stroke-width="3" stroke-linejoin="round" opacity=".75"></polyline>
+
+  <!-- splash crown -->
+  <polygon points="128,332 170,316 248,316 292,332 248,346 170,346" fill="#e9f5f2" opacity=".92"></polygon>
+  <polygon points="146,330 158,288 174,324" fill="#e9f5f2"></polygon>
+  <polygon points="166,324 178,270 196,320" fill="#cdeff3"></polygon>
+  <polygon points="232,320 248,274 262,326" fill="#e9f5f2"></polygon>
+  <polygon points="254,326 274,294 284,330" fill="#cdeff3"></polygon>
+  <polygon points="122,334 126,306 140,332" fill="#cdeff3"></polygon>
+  <polygon points="282,332 298,310 300,336" fill="#e9f5f2"></polygon>
+
+  <!-- droplets -->
+  <polygon points="140,268 145,260 150,268 145,276" fill="#e9f5f2"></polygon>
+  <polygon points="118,296 122,290 126,296 122,302" fill="#cdeff3"></polygon>
+  <polygon points="276,258 281,250 286,258 281,266" fill="#e9f5f2"></polygon>
+  <polygon points="302,284 306,278 310,284 306,290" fill="#cdeff3"></polygon>
+  <polygon points="200,250 204,244 208,250 204,256" fill="#e9f5f2"></polygon>
+  <polygon points="160,240 163,235 166,240 163,245" fill="#cdeff3"></polygon>
+</svg>

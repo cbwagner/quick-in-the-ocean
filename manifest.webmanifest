@@ -1,0 +1,19 @@
+{
+  "name": "Quick In The Ocean",
+  "short_name": "Quick",
+  "description": "Guide Quick the orca through five Salish Sea straits. A QUIN X Games game.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#051b27",
+  "theme_color": "#051b27",
+  "categories": ["games", "kids"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

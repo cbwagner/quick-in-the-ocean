@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Quick In The Ocean</title>
+<meta name="description" content="Guide Quick the orca through five Salish Sea straits. A QUIN X Games game.">
+<meta name="theme-color" content="#051b27">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quick">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+@font-face{font-family:'Chakra Petch';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/chakra-petch-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Chakra Petch';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/chakra-petch-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/outfit-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/outfit-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/outfit-latin-600-normal.woff2) format('woff2')}
+/* Layout: full-bleed low-poly ocean canvas, a thin floating HUD strip on top, faceted cards between levels */
+:root{
+  --abyss:#051b27;
+  --glass:rgba(5,27,39,.78);
+  --foam:#e9f5f2;
+  --mist:#9fc3cc;
+  --salmon:#ff8a5b;
+  --heart:#ff5d73;
+  --quin:#f2304a;
+  --line:rgba(233,245,242,.16);
+  --display:"Chakra Petch","Trebuchet MS",system-ui,sans-serif;
+  --body:"Outfit",system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;overflow:hidden;margin:0}
+[hidden]{display:none!important}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--abyss);color:var(--foam);font-family:var(--body);font-size:16px;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#game{position:fixed;inset:0}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+
+.hud{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;
+  padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  pointer-events:none;background:linear-gradient(rgba(5,27,39,.72),rgba(5,27,39,0))}
+.jump{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:88px;height:88px;border:0;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(255,138,91,.88);color:var(--abyss);
+  font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;touch-action:none;
+  clip-path:polygon(50% 0,100% 28%,100% 72%,50% 100%,0 72%,0 28%)}
+.jump svg{width:26px;height:22px;fill:currentColor}
+.jump.alert{animation:pulse .5s ease-in-out infinite alternate}
+.jump:active{filter:brightness(1.15);transform:scale(.96)}
+.jump:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--foam)}
+@keyframes pulse{to{transform:scale(1.1);background:#ffb38a}}
+@media (prefers-reduced-motion: reduce){.jump.alert{animation:none;background:#ffb38a}}
+.brand{display:flex;align-items:center;gap:12px;color:var(--quin)}
+.brand svg{width:54px;height:54px;flex:none}
+.brand span{display:flex;flex-direction:column;font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.16em;text-transform:uppercase;line-height:1.15}
+.brand small{font-size:11px;font-weight:600;letter-spacing:.2em;color:var(--mist)}
+.credit{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--quin)}
+.credit svg{width:22px;height:22px}
+.overlay.low{align-items:flex-end}
+.credits{display:grid;gap:10px;margin:0}
+.credits div{display:flex;flex-direction:column;gap:2px}
+.credits dt{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--mist)}
+.credits dd{margin:0;font-size:17px;color:var(--foam)}
+.picker{display:flex;flex-direction:column;gap:8px}
+.picker span{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mist)}
+.picker div{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.pick{min-height:44px;border:1px solid var(--line);background:rgba(233,245,242,.06);color:var(--foam);font-family:var(--display);font-weight:700;font-size:17px;cursor:pointer;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+.pick:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--salmon)}
+.hud .left{display:flex;flex-direction:column;gap:4px}
+.hearts{display:flex;gap:3px}
+.hearts svg{width:18px;height:16px;fill:var(--heart)}
+.hearts svg.off{fill:none;stroke:rgba(233,245,242,.35);stroke-width:1.5}
+.score{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.lvname{font-family:var(--display);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog{height:6px;background:rgba(233,245,242,.14);clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%)}
+.prog i{display:block;height:100%;background:var(--salmon);transform-origin:left;transform:scaleX(0)}
+.icon-btn{pointer-events:auto;width:44px;height:44px;display:grid;place-items:center;border:0;background:rgba(233,245,242,.1);color:var(--foam);cursor:pointer;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.icon-btn svg{width:20px;height:20px;fill:currentColor}
+.icon-btn:focus-visible{box-shadow:inset 0 0 0 2px var(--salmon);outline:none}
+
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:radial-gradient(ellipse at center,rgba(5,27,39,.25),rgba(5,27,39,.7))}
+.card{width:100%;max-width:400px;max-height:100%;overflow:auto;background:var(--glass);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:26px 24px 24px;display:flex;flex-direction:column;gap:14px;
+  clip-path:polygon(18px 0,100% 0,100% calc(100% - 18px),calc(100% - 18px) 100%,0 100%,0 18px)}
+.eyebrow{font-family:var(--display);font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--salmon)}
+.card h1,.card h2{font-family:var(--display);font-weight:700;line-height:1;margin:0;text-wrap:balance}
+.card h1{font-size:clamp(40px,11vw,58px);letter-spacing:.01em}
+.card h2{font-size:30px}
+.card p{margin:0;line-height:1.5;color:var(--mist);font-size:15px}
+.rules{display:grid;gap:8px;margin:2px 0 0;padding:0;list-style:none}
+.rules li{display:flex;gap:10px;align-items:center;font-size:15px;color:var(--foam)}
+.rules b{font-family:var(--display);font-size:11px;letter-spacing:.12em;text-transform:uppercase;min-width:52px;color:var(--mist);font-weight:600}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{padding:10px 12px;background:rgba(233,245,242,.06)}
+.stat span{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mist);font-family:var(--display);font-weight:600}
+.stat strong{font-family:var(--display);font-size:26px;font-variant-numeric:tabular-nums}
+.new{color:var(--salmon);font-family:var(--display);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:13px}
+.actions{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.btn{min-height:54px;border:0;cursor:pointer;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.14em;text-transform:uppercase;
+  background:var(--salmon);color:var(--abyss);clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.btn.ghost{background:rgba(233,245,242,.1);color:var(--foam)}
+.btn:active{transform:translateY(1px);filter:brightness(1.08)}
+.btn:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--foam)}
+.dots{display:flex;gap:6px}
+.dots i{width:22px;height:5px;background:rgba(233,245,242,.18)}
+.dots i.on{background:var(--salmon)}
+.hint{font-size:13px;color:var(--mist);opacity:.8}
+</style>
+
+</head>
+<body>
+<div id="game"><canvas id="cv" aria-label="Orca Run game area"></canvas></div>
+
+<div class="hud" id="hud" hidden>
+  <div class="left">
+    <div class="hearts" id="hearts"></div>
+    <div class="score" id="score">0</div>
+  </div>
+  <div class="mid">
+    <div class="lvname" id="lvname">Haro Strait</div>
+    <div class="prog"><i id="prog"></i></div>
+  </div>
+  <button class="icon-btn" id="muteBtn" aria-label="Mute sound"></button>
+  <button class="icon-btn" id="pauseBtn" aria-label="Pause"><svg viewBox="0 0 20 20"><rect x="4" y="3" width="4" height="14"/><rect x="12" y="3" width="4" height="14"/></svg></button>
+</div>
+
+<button class="jump" id="jumpBtn" hidden aria-label="Jump out of the water"><svg viewBox="0 0 26 22"><polygon points="13,0 26,14 18,14 18,22 8,22 8,14 0,14"/></svg>Jump</button>
+
+<div class="overlay" id="overlay"><div class="card" id="card"></div></div>
+
+<script>
+(()=>{
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=(a,b)=>a+Math.random()*(b-a);
+
+const LEVELS=[
+  {name:'Haro Strait',      len:30, speed:210, shark:2.4,  net:0,   fish:.75, wavy:0,   tip:'A warm-up. Chinook are plentiful and only a few sharks patrol.'},
+  {name:'Boundary Pass',    len:35, speed:235, shark:2.0,  net:5.0, fish:.8,  wavy:0,   tip:'Fishing nets start drifting through. Swim over or under them.'},
+  {name:'Active Pass',      len:40, speed:262, shark:1.7,  net:4.0, fish:.85, wavy:.6,  tip:'Sharks begin to weave up and down. Watch their path.'},
+  {name:'Johnstone Strait', len:45, speed:292, shark:1.4,  net:3.3, fish:.9,  wavy:.85, tip:'Faster water and more nets. Stay in the middle lanes.'},
+  {name:'Juan de Fuca',     len:50, speed:328, shark:1.15, net:2.7, fish:.95, wavy:1, full:.5, tip:'Quick\'s pod is waiting just past this strait. Some nets reach all the way to the seabed. Watch for the warning, then double-tap or press Jump to breach over them.'}
+];
+const SURF=110, FLOOR=58, MAXL=5, GRAV=1500;
+
+/* ---------- sound ---------- */
+let ac=null, muted=store.get('orca-muted')==='1';
+function audio(){ if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}} if(ac&&ac.state==='suspended')ac.resume().catch(()=>{}); musicStart(); }
+
+/* music: a D-minor loop (Dm, Bb, F, C) that adds layers and tempo per strait */
+const CH=[
+  {r:73.42,n:[146.83,174.61,220,261.63],a:[293.66,349.23,440,523.25]},
+  {r:58.27,n:[116.54,146.83,174.61,220],a:[233.08,293.66,349.23,440]},
+  {r:87.31,n:[174.61,220,261.63,329.63],a:[349.23,440,523.25,659.25]},
+  {r:65.41,n:[130.81,164.81,196,246.94],a:[261.63,329.63,392,493.88]}
+];
+const BPM=[68,76,86,97,110], CUT=[850,1250,1800,2600,3800];
+const M={bus:null,filt:null,nb:null,step:0,next:0,timer:null,lv:0};
+function musicStart(){
+  if(!ac||M.timer)return;
+  M.bus=ac.createGain();M.bus.gain.value=0;M.bus.connect(ac.destination);
+  M.filt=ac.createBiquadFilter();M.filt.type='lowpass';M.filt.frequency.value=CUT[M.lv];M.filt.connect(M.bus);
+  const dl=ac.createDelay(1),fb=ac.createGain(),wet=ac.createGain();dl.delayTime.value=.42;fb.gain.value=.38;wet.gain.value=.5;
+  M.filt.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(M.bus);
+  const len=Math.floor(ac.sampleRate*.08);M.nb=ac.createBuffer(1,len,ac.sampleRate);const d=M.nb.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);
+  M.next=ac.currentTime+.15;M.step=0;M.timer=setInterval(sched,30);musicVol();
+}
+function musicVol(){if(!M.bus)return;const v=muted?0:(state==='paused'?.25:.75);M.bus.gain.setTargetAtTime(v,ac.currentTime,.4)}
+function setMusic(lv){M.lv=lv;if(M.filt)M.filt.frequency.setTargetAtTime(CUT[lv],ac.currentTime,1.5)}
+function mn(f,t,dur,type,vol,att){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.exponentialRampToValueAtTime(.0005,t+dur);o.connect(g);g.connect(M.filt);o.start(t);o.stop(t+dur+.05)}
+function hat(t,v){const s=ac.createBufferSource();s.buffer=M.nb;const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=7000;const g=ac.createGain();g.gain.value=v;s.connect(hp);hp.connect(g);g.connect(M.bus);s.start(t)}
+function kick(t,v){const o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(42,t+.18);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+.3);o.connect(g);g.connect(M.bus);o.start(t);o.stop(t+.32)}
+function sched(){
+  if(!ac)return; if(document.hidden){M.next=ac.currentTime+.1;return}
+  while(M.next<ac.currentTime+.2){playStep(M.step,M.next);M.next+=60/BPM[M.lv]/4;M.step++}
+}
+function playStep(st,t){
+  const lv=M.lv,s=st%16,bar=Math.floor(st/16)%4,c=CH[bar],spb=60/BPM[lv];
+  if(s===0)c.n.forEach(f=>{mn(f,t,spb*4+.6,'triangle',.022,.5);mn(f*1.005,t,spb*4+.6,'sine',.016,.7)});
+  const every=lv>=4?1:lv>=1?2:4;
+  if(s%every===0){const pat=lv>=4?[0,2,1,3,2,0,3,1]:[0,1,2,3];mn(c.a[pat[(s/every)%pat.length]],t,lv>=3?.35:.7,'sine',lv>=3?.032:.04,.008)}
+  if(lv>=1&&(s===0||s===8||(lv>=3&&s===11)))mn(c.r*2,t,spb*1.6,'triangle',.09,.02);
+  if(lv>=2&&s%4===2)hat(t,lv>=4?.05:.035);
+  if(lv>=4&&s%2===1)hat(t,.018);
+  if(lv>=3&&(s===0||s===8||(lv>=4&&(s===4||s===12))))kick(t,lv>=4?.32:.24);
+  if(lv>=4&&bar%2===1&&[0,3,6,10,12].includes(s))mn(c.a[[3,2,3,1,0][[0,3,6,10,12].indexOf(s)]]*2,t,.3,'square',.012,.01);
+}
+
+/* orca calls: pulsed calls, whistles, and a squeal when hurt */
+function orcaCall(type){
+  if(!ac||muted)return;const t=ac.currentTime+.02,g=ac.createGain(),o=ac.createOscillator();
+  const dur=type==='whistle'?.55:type==='squeal'?.4:rand(.6,.95), peak=type==='pulse'?.07:.05;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+.06);g.gain.setValueAtTime(peak,t+dur-.15);g.gain.linearRampToValueAtTime(0,t+dur);
+  if(type==='pulse'){
+    o.type='sawtooth';const f=rand(700,1000);o.frequency.setValueAtTime(f,t);o.frequency.linearRampToValueAtTime(f*1.5,t+dur*.3);o.frequency.linearRampToValueAtTime(f*1.15,t+dur*.8);o.frequency.linearRampToValueAtTime(f*1.6,t+dur);
+    const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f*2;bp.Q.value=3;
+    const am=ac.createGain();am.gain.value=.5;const lfo=ac.createOscillator(),lg=ac.createGain();lfo.type='square';lfo.frequency.value=rand(28,45);lg.gain.value=.5;
+    lfo.connect(lg);lg.connect(am.gain);lfo.start(t);lfo.stop(t+dur);o.connect(bp);bp.connect(am);am.connect(g);
+  }else{
+    o.type='sine';const f=type==='squeal'?2600:rand(1600,2200);o.frequency.setValueAtTime(f,t);
+    if(type==='squeal'){o.frequency.linearRampToValueAtTime(900,t+dur)}else{o.frequency.linearRampToValueAtTime(f*1.7,t+dur*.45);o.frequency.linearRampToValueAtTime(f*1.25,t+dur)}
+    const v=ac.createOscillator(),vg=ac.createGain();v.frequency.value=7;vg.gain.value=40;v.connect(vg);vg.connect(o.frequency);v.start(t);v.stop(t+dur);o.connect(g);
+  }
+  g.connect(ac.destination);if(M.filt)g.connect(M.filt);o.start(t);o.stop(t+dur+.05);
+}
+function tone(f1,f2,dur,type,vol,delay){ if(!ac||muted)return; const t=ac.currentTime+(delay||0); const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'sine'; o.frequency.setValueAtTime(f1,t); o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(vol||.12,t); g.gain.exponentialRampToValueAtTime(.0008,t+dur); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+.03); }
+function noise(dur,vol){ if(!ac||muted)return; const n=Math.floor(ac.sampleRate*dur), b=ac.createBuffer(1,n,ac.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n); const s=ac.createBufferSource(); s.buffer=b; const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=700;
+  const g=ac.createGain(); g.gain.value=vol; s.connect(f); f.connect(g); g.connect(ac.destination); s.start(); }
+const sfx={
+  chomp(){tone(320,760,.07,'square',.05); tone(540,980,.06,'triangle',.08,.045)},
+  hit(){noise(.3,.35); tone(190,55,.32,'sawtooth',.1)},
+  heart(){[660,880,1320].forEach((f,i)=>tone(f,f*1.01,.12,'triangle',.08,i*.07))},
+  clear(){[523,659,784,1047].forEach((f,i)=>tone(f,f,.18,'triangle',.1,i*.11))},
+  over(){[392,330,262,196].forEach((f,i)=>tone(f,f*.97,.26,'triangle',.1,i*.18))},
+  tap(){tone(440,660,.06,'sine',.06)},
+  splash(){noise(.35,.3)}
+};
+
+/* ---------- canvas / scene ---------- */
+let DPR=1,cw=0,ch=0,scale=1,W=520,H=600,scene=null;
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1); cw=innerWidth; ch=innerHeight;
+  cv.width=Math.round(cw*DPR); cv.height=Math.round(ch*DPR);
+  scale=Math.min(ch/600,cw/520); W=cw/scale; H=ch/scale; buildScene(); clampOrca();
+}
+function shade(rgb,k){return `rgb(${rgb.map(v=>clamp(Math.round(v+k),0,255)).join(',')})`}
+function buildScene(){
+  const cell=92, cols=Math.ceil(W/cell)+1, rows=Math.ceil(H/cell)+1, tileW=cols*cell;
+  const P=[];
+  for(let r=0;r<=rows;r++){P[r]=[];for(let c=0;c<=cols;c++){
+    const jx=(c===0||c===cols)?0:(Math.random()-.5)*cell*.7, jy=(r===0||r===rows)?0:(Math.random()-.5)*cell*.7;
+    P[r][c]=[c*cell+jx,r*cell+jy];}
+    if(r>0&&r<rows)P[r][cols][1]=P[r][0][1];}
+  const top=[40,150,168], bot=[6,34,52], tris=[];
+  const col=(cy,k)=>{const t=clamp((cy-SURF)/(H-SURF),0,1); return shade(top.map((v,i)=>v+(bot[i]-v)*Math.pow(t,.8)),k)};
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const a=P[r][c],b=P[r][c+1],d=P[r+1][c],e=P[r+1][c+1];
+    const pair=(r+c)%2?[[a,b,e],[a,e,d]]:[[a,b,d],[b,e,d]];
+    pair.forEach((t,i)=>{const cy=(t[0][1]+t[1][1]+t[2][1])/3; tris.push({p:t.flat(),f:col(cy,rand(-9,9)+(i?-6:5))})});
+  }
+  const ridge=[], rs=110, rn=Math.round(tileW/rs);
+  for(let i=0;i<=rn;i++)ridge.push(i===rn?ridge[0]:rand(30,140));
+  const floor=[], fs=64, fn=Math.round(tileW/fs);
+  for(let i=0;i<=fn;i++)floor.push(i===fn?floor[0]:rand(-10,22));
+  const surf=[], sn=Math.round(tileW/46);
+  for(let i=0;i<=sn;i++)surf.push(i===sn?surf[0]:rand(-6,6));
+  // sky: low-poly band above the water line
+  const skyH=SURF+14, scn=Math.round(tileW/64), scw=tileW/scn, srn=3, SP=[], sky=[];
+  for(let r=0;r<=srn;r++){SP[r]=[];for(let c=0;c<=scn;c++){
+    const jx=(c===0||c===scn)?0:(Math.random()-.5)*scw*.6, jy=(r===0||r===srn)?0:(Math.random()-.5)*(skyH/srn)*.6;
+    SP[r][c]=[c*scw+jx,r*skyH/srn+jy];}
+    if(r>0&&r<srn)SP[r][scn][1]=SP[r][0][1];}
+  const sTop=[78,128,162], sBot=[184,214,222];
+  for(let r=0;r<srn;r++)for(let c=0;c<scn;c++){
+    const a=SP[r][c],b=SP[r][c+1],d=SP[r+1][c],e=SP[r+1][c+1];
+    [[a,b,e],[a,e,d]].forEach((tr,i)=>{const t=clamp((tr[0][1]+tr[1][1]+tr[2][1])/3/skyH,0,1);sky.push({p:tr.flat(),f:shade(sTop.map((v,j)=>v+(sBot[j]-v)*t),rand(-6,6)+(i?-4:4))})});
+  }
+  const mts=[], mn2=Math.round(tileW/150);
+  for(let i=0;i<=mn2;i++)mts.push(i===mn2?mts[0]:rand(12,58));
+  scene={tileW,tris,ridge,rs:tileW/rn,floor,fs:tileW/fn,surf,ss:tileW/sn,sky,mts,ms:tileW/mn2};
+}
+
+/* ---------- state ---------- */
+let state='menu', lvl=0, score=0, lives=3, levelStartScore=0, t=0, scroll=0, shake=0, newBest=false;
+let best=+(store.get('orca-best')||0);
+const orca={x:150,y:300,tx:150,ty:300,vy:0,ang:0,inv:0,tail:0,air:false,out:false,avy:0};
+let sharks=[],fish=[],nets=[],hearts=[],parts=[],bubbles=[];
+let timers={shark:1.2,fish:.3,net:2.5,bub:1,call:5};
+let pod=[],reunionT=0,metDone=false;
+function startReunion(){
+  state='reunion'; reunionT=0; metDone=false; setMusic(0); updateHUD();
+  const my=(SURF+H-FLOOR)/2;
+  orca.tx=W*.4; orca.ty=my;
+  pod=[
+    {x:W+150,y:my-70,tx:W*.66,ty:my-70,sc:1.75,fin:1.6,dir:-1,ph:0,d:0,tail:0},
+    {x:W+260,y:my+45,tx:W*.79,ty:my+45,sc:1.6,fin:1,dir:-1,ph:1.3,d:.5,tail:1},
+    {x:W+380,y:my-15,tx:W*.9,ty:my-15,sc:1.7,fin:1,dir:-1,ph:2.1,d:.9,tail:2},
+    {x:W+200,y:my+120,tx:W*.6,ty:my+110,sc:1.1,fin:1,dir:-1,ph:3,d:1.3,tail:3}
+  ];
+}
+function jump(){
+  if(state!=='play'||orca.air)return;
+  orca.air=true;orca.out=false;orca.avy=-Math.sqrt(2*GRAV*Math.max(60,orca.y-(SURF-125)));orcaCall('whistle');
+}
+function splash(x){sfx.splash();for(let i=0;i<16;i++){const a=rand(-2.6,-.5),v=rand(80,240);parts.push({x:x+rand(-20,20),y:SURF,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rand(.4,.8),col:i%2?'#e9f5f2':'#9fe0ea',s:rand(3,6),rot:rand(0,6.28)})}}
+function clampOrca(){orca.tx=clamp(orca.tx,50,W*.6);orca.ty=clamp(orca.ty,SURF+24,H-FLOOR-34);}
+
+/* ---------- spawning ---------- */
+const playTop=()=>SURF+40, playBot=()=>H-FLOOR-50;
+function spawnShark(L){const sz=rand(.9,1.2); sharks.push({x:W+90,y0:rand(playTop(),playBot()),y:0,amp:L.wavy*rand(25,75),ph:rand(0,6.28),sz,vx:-(L.speed*1.3+rand(0,80))})}
+function spawnFish(L){const n=Math.random()<.35?3:Math.random()<.5?2:1, y=rand(playTop(),playBot()), vert=Math.random()<.5;
+  for(let i=0;i<n;i++)fish.push({x:W+30+(vert?0:i*34),y0:clamp(y+(vert?i*30:0),playTop(),playBot()),y:0,ph:rand(0,6.28),vx:-L.speed*.82});
+  if(lives<MAXL&&Math.random()<.04)hearts.push({x:W+40,y0:rand(playTop(),playBot()),y:0,ph:0});}
+function spawnNet(L){
+  if(L.full&&Math.random()<L.full){nets.push({x:W+40+L.speed*1.1,w:46,top:true,full:true,y0:SURF-2,y1:H-FLOOR+6});return}
+  const span=H-SURF-FLOOR, len=span*rand(.32,.55), top=Math.random()<.5;
+  nets.push({x:W+40,w:46,top,y0:top?SURF-2:H-FLOOR-len,y1:top?SURF+len:H-FLOOR+6});}
+
+/* ---------- flow ---------- */
+function startLevel(i){
+  lvl=i; t=0; sharks=[];fish=[];nets=[];hearts=[];parts=[];pod=[];
+  timers={shark:1.4,fish:.3,net:LEVELS[i].net?2.2:0,bub:1,call:rand(4,8)};
+  orca.x=orca.tx=Math.min(150,W*.3); orca.y=orca.ty=H/2+SURF/2; orca.inv=0; orca.ang=0; orca.air=false;
+  levelStartScore=score; state='intro'; setMusic(i); updateHUD(); showIntro();
+}
+function hit(){
+  if(orca.inv>0)return; lives--; orca.inv=1.8; shake=reduce?0:10; sfx.hit(); orcaCall('squeal'); burst(orca.x,orca.y,'#ff5d73',14); updateHUD();
+  if(lives<=0)gameOver();
+}
+function levelClear(){
+  const bonus=50*(lvl+1)+lives*20; score+=bonus; lives=Math.min(MAXL,lives+1); sfx.clear(); setTimeout(()=>orcaCall('whistle'),500); orca.air=false; updateHUD();
+  if(lvl===LEVELS.length-1){startReunion();return}
+  state='clear'; showClear(bonus);
+}
+function saveBest(){newBest=score>best; if(newBest){best=score;store.set('orca-best',String(best))}}
+function gameOver(){state='over'; saveBest(); setTimeout(sfx.over,250); showOver();}
+function finish(){
+  state='win'; saveBest();
+  if(H>W*1.3){const dy=(SURF+(H-SURF-FLOOR)*.17)-orca.ty; orca.ty+=dy; pod.forEach(p=>p.ty=Math.max(SURF+45,p.ty+dy))}
+  showWin();
+}
+
+/* ---------- update ---------- */
+function update(dt){
+  const L=LEVELS[lvl];
+  orca.tail+=dt*(state==='play'?11:6);
+  if(state==='play'){
+    t+=dt; const sp=L.speed; scroll+=sp*dt;
+    const k=Math.min(1,dt*9), py=orca.y;
+    orca.x+=(orca.tx-orca.x)*k;
+    if(orca.air){
+      orca.avy+=GRAV*dt; orca.y+=orca.avy*dt;
+      if(!orca.out&&orca.y<SURF){orca.out=true;splash(orca.x)}
+      if(orca.out&&orca.avy>0&&orca.y>SURF){orca.out=false;splash(orca.x)}
+      if(orca.avy>0&&orca.y>=SURF+40){orca.air=false;orca.ty=orca.y;clampOrca()}
+      orca.ang+=(clamp(orca.avy/900,-.9,.9)-orca.ang)*Math.min(1,dt*12);
+    }else{
+      orca.y+=(orca.ty-orca.y)*k;
+      orca.vy=(orca.y-py)/Math.max(dt,.001);
+      orca.ang+=(clamp(orca.vy/650,-.42,.42)-orca.ang)*Math.min(1,dt*10);
+    }
+    if((timers.call-=dt)<=0){timers.call=rand(6,12);orcaCall(Math.random()<.6?'pulse':'whistle')}
+    orca.inv=Math.max(0,orca.inv-dt);
+    if(t<L.len-1.6){
+      if((timers.fish-=dt)<=0){spawnFish(L);timers.fish=L.fish*rand(.7,1.3)}
+      if((timers.shark-=dt)<=0){spawnShark(L);timers.shark=L.shark*rand(.7,1.3)}
+      if(L.net&&(timers.net-=dt)<=0){spawnNet(L);timers.net=L.net*rand(.75,1.25)}
+    }
+    for(const s of sharks){s.x+=s.vx*dt;s.ph+=dt*2.2;s.y=clamp(s.y0+Math.sin(s.ph)*s.amp,SURF+30,H-FLOOR-30)}
+    for(const f of fish){f.x+=f.vx*dt;f.ph+=dt*5;f.y=f.y0+Math.sin(f.ph)*5}
+    for(const h of hearts){h.x-=sp*.8*dt;h.ph+=dt*3;h.y=h.y0+Math.sin(h.ph)*8}
+    for(const n of nets)n.x-=sp*dt;
+    sharks=sharks.filter(s=>s.x>-140); fish=fish.filter(f=>f.x>-40&&!f.dead); nets=nets.filter(n=>n.x>-80); hearts=hearts.filter(h=>h.x>-40&&!h.dead);
+    // collisions
+    const c=Math.cos(orca.ang)*BABY,s=Math.sin(orca.ang)*BABY;
+    const circ=[[orca.x+22*c,orca.y+22*s,15*BABY],[orca.x-12*c,orca.y-12*s,14*BABY],[orca.x-38*c,orca.y-38*s,8*BABY]];
+    const head=[orca.x+34*c,orca.y+34*s];
+    for(const f of fish){if(Math.hypot(f.x-head[0],f.y-head[1])<28){f.dead=true;score+=10;sfx.chomp();burst(f.x,f.y,'#ffb38a',7);updateHUD()}}
+    for(const h of hearts){if(Math.hypot(h.x-head[0],h.y-head[1])<30){h.dead=true;lives=Math.min(MAXL,lives+1);sfx.heart();burst(h.x,h.y,'#ff5d73',10);updateHUD()}}
+    if(orca.inv<=0){
+      for(const sh of sharks){for(const q of circ){const dx=(q[0]-sh.x)/(46*sh.sz+q[2]), dy=(q[1]-sh.y)/(12*sh.sz+q[2]); if(dx*dx+dy*dy<1){hit();break}} if(orca.inv>0)break}
+    }
+    if(orca.inv<=0&&state==='play'){
+      for(const n of nets){for(const q of circ){const nx=clamp(q[0],n.x,n.x+n.w), ny=clamp(q[1],n.y0,n.y1); if(Math.hypot(q[0]-nx,q[1]-ny)<q[2]){hit();break}} if(orca.inv>0)break}
+    }
+    const warn=lvl===4&&nets.some(n=>n.full&&n.x>orca.x-20&&n.x<W+n.w+LEVELS[4].speed*1.1);
+    $('jumpBtn').classList.toggle('alert',warn&&!orca.air);
+    if(orca.y>SURF+20&&(timers.bub-=dt)<=0){timers.bub=rand(.5,1.3);bubbles.push({x:orca.x+10,y:orca.y-16,r:rand(2,4.5),life:1.4})}
+    $('prog').style.transform=`scaleX(${clamp(t/L.len,0,1)})`;
+    if(state==='play'&&t>=L.len)levelClear();
+  } else if(state==='reunion'||(state==='win'&&pod.length)){
+    if(state==='reunion')reunionT+=dt;
+    scroll+=70*dt;
+    const k=Math.min(1,dt*1.6), now=performance.now();
+    orca.x+=(orca.tx-orca.x)*k; orca.y+=(orca.ty+Math.sin(now/650)*10-orca.y)*k; orca.ang+=(Math.cos(now/650)*.06-orca.ang)*Math.min(1,dt*4);
+    const turned=state==='win'||reunionT>3.8;
+    for(const p of pod){
+      p.ph+=dt*1.8; p.tail+=dt*4.5;
+      if(state==='win'||reunionT>p.d){const kk=Math.min(1,dt*1.1); p.x+=(p.tx-p.x)*kk; p.y+=(p.ty+Math.sin(p.ph)*8-p.y)*kk}
+      p.dir+=((turned?1:-1)-p.dir)*Math.min(1,dt*2.5);
+    }
+    for(const s of sharks)s.x+=s.vx*dt; for(const f of fish)f.x+=f.vx*dt; for(const n of nets)n.x-=260*dt;
+    sharks=sharks.filter(s=>s.x>-140); fish=fish.filter(f=>f.x>-40); nets=nets.filter(n=>n.x>-80);
+    if(state==='reunion'){
+      if(!metDone&&reunionT>2.4){metDone=true; orcaCall('pulse'); setTimeout(()=>orcaCall('whistle'),450); setTimeout(()=>orcaCall('pulse'),1000);
+        for(let i=0;i<12;i++)parts.push({x:orca.x+rand(-30,30),y:orca.y-20,vx:rand(-30,30),vy:rand(-90,-40),life:rand(.9,1.5),col:i%2?'#ff5d73':'#ff8c9b',s:rand(4,7),rot:0})}
+      if(reunionT>6.5)finish();
+    }
+  } else if(state!=='paused'){
+    scroll+=55*dt; orca.y+=(orca.ty+Math.sin(performance.now()/700)*14-orca.y)*Math.min(1,dt*2); orca.ang=Math.cos(performance.now()/700)*.08;
+  }
+  if(state!=='paused'){
+    for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=60*dt;p.life-=dt}
+    parts=parts.filter(p=>p.life>0);
+    for(const b of bubbles){b.y-=40*dt;b.x-=(state==='play'?LEVELS[lvl].speed*.4:20)*dt;b.life-=dt}
+    bubbles=bubbles.filter(b=>b.life>0&&b.y>SURF);
+  }
+  shake=Math.max(0,shake-dt*30);
+}
+function burst(x,y,col,n){for(let i=0;i<n;i++){const a=rand(0,6.28),v=rand(40,160);parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rand(.35,.7),col,s:rand(3,6),rot:rand(0,6.28)})}}
+
+/* ---------- drawing ---------- */
+function poly(p,fill){ctx.beginPath();ctx.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)ctx.lineTo(p[i],p[i+1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill()}
+function tiled(off,fn){const tw=scene.tileW, o=((off%tw)+tw)%tw; ctx.save();ctx.translate(-o,0);fn();ctx.translate(tw,0);fn();ctx.restore()}
+function drawBG(){
+  tiled(scroll*.12,()=>{for(const tr of scene.tris)poly(tr.p,tr.f)});
+  // light rays
+  ctx.save();ctx.globalAlpha=.06;
+  for(let i=0;i<5;i++){const x=(i+.5)*W/5+Math.sin(performance.now()/3000+i)*20; poly([x-30,SURF,x+30,SURF,x+140,H*.85,x+60,H*.85],'#d9fbff')}
+  ctx.restore();
+  // sky and distant islands
+  tiled(scroll*.08,()=>{for(const tr of scene.sky)poly(tr.p,tr.f)});
+  tiled(scroll*.2,()=>{const m=scene.mts,st=scene.ms,b=SURF+12;
+    for(let i=0;i<m.length-1;i++){const x0=i*st,x1=(i+1)*st,px=(x0+x1)/2,py=SURF-Math.max(m[i],m[i+1]);
+      poly([x0,SURF-m[i]*.4,px,py,px,b,x0,b],'#4f7d8e');poly([px,py,x1,SURF-m[i+1]*.4,x1,b,px,b],'#436f7f')}});
+  // water surface
+  const now=performance.now();
+  tiled(scroll*.5,()=>{const s=scene.surf,st=scene.ss,wy=i=>SURF+s[i]*.6+Math.sin(now/600+i)*2;
+    for(let i=0;i<s.length-1;i++){const x0=i*st,x1=(i+1)*st;
+      poly([x0,wy(i),x1,wy(i+1),x1,SURF+16,x0,SURF+16],'#2b93a5');
+      poly([x0,wy(i),x1,wy(i+1),(x0+x1)/2,SURF+16],i%2?'#3aa7b6':'#2f9aac')}
+    ctx.strokeStyle='rgba(233,250,250,.7)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,wy(0));
+    for(let i=1;i<s.length;i++)ctx.lineTo(i*st,wy(i));ctx.stroke()});
+  // far ridge
+  tiled(scroll*.35,()=>{const r=scene.ridge,st=scene.rs,base=H-FLOOR+10;
+    for(let i=0;i<r.length-1;i++){const x0=i*st,x1=(i+1)*st,y0=base-r[i],y1=base-r[i+1];
+      poly([x0,y0,x1,y1,x0,H],r[i]>r[i+1]?'#0d3a4c':'#0b3243');poly([x1,y1,x1,H,x0,H],'#09293a')}});
+}
+function drawFloor(){
+  tiled(scroll,()=>{const f=scene.floor,st=scene.fs,base=H-FLOOR;
+    for(let i=0;i<f.length-1;i++){const x0=i*st,x1=(i+1)*st,y0=base-f[i],y1=base-f[i+1];
+      poly([x0,y0,x1,y1,(x0+x1)/2,H],i%2?'#1d4148':'#173840');poly([x0,y0,(x0+x1)/2,H,x0,H],'#12303a');poly([x1,y1,x1,H,(x0+x1)/2,H],'#142f37')}});
+}
+/* Quick is a calf: smaller, with the peach-tinted white patches newborn orcas have */
+const BABY=.78;
+function drawOrca(o){drawOrcaBody(o.x,o.y,o.ang,BABY,1,o.tail,1,(o.inv>0&&Math.floor(o.inv*10)%2===0)?.35:1,'#f7dccb','#e6c3ad')}
+function drawOrcaBody(x,y,ang,sc,dir,tail,fin,alpha,wh,wh2){
+  ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.scale(sc*dir,sc);ctx.globalAlpha=alpha;
+  const sw=Math.sin(tail)*7, fs=Math.sin(tail*.5)*3, ft=-17-29*fin;
+  poly([-46,-3,-66,-14+sw,-60,sw*.6,-66,12+sw,-46,3],'#11141a');
+  poly([-46,-3,-66,-14+sw,-60,sw*.6],'#2a303b');
+  poly([50,1,40,9,20,15,-10,16,-36,10,-48,3,-48,0],'#0f1218');
+  poly([50,1,38,-12,15,-19,-15,-17,-38,-9,-48,-3,-48,0],'#1c212b');
+  poly([38,-12,15,-19,12,-4],'#2d3440');
+  poly([15,-19,-15,-17,-2,-6],'#262c37');
+  poly([-15,-17,-38,-9,-20,-3],'#20252f');
+  poly([46,5,40,9,20,15,-10,16,-26,11,2,9,28,6],wh);
+  poly([20,15,-10,16,2,9],wh2);
+  poly([31,-8,24,-11,14,-8,18,-4,27,-4],wh);
+  poly([-4,-16,-22,-14,-18,-10,-6,-12],'#8d97a3');
+  poly([2,-17,-12,ft,-20,-15],'#14171e');
+  poly([2,-17,-12,ft,-6,-17],'#2d3440');
+  poly([14,11,2,26+fs,-6,13],'#0b0d12');
+  ctx.fillStyle='#000';ctx.fillRect(34,-5,3,3);
+  ctx.restore();
+}
+function drawShark(s){
+  ctx.save();ctx.translate(s.x,s.y);ctx.scale(s.sz,s.sz);const sw=Math.sin(s.ph*3)*6;
+  poly([42,-3,62,-24+sw,54,0,60,15+sw,42,3],'#5d7482');
+  poly([42,-3,62,-24+sw,54,0],'#7891a0');
+  poly([-56,1,-40,-10,-10,-15,25,-10,44,-3,44,1],'#7e97a6');
+  poly([-40,-10,-10,-15,-18,-3],'#96aebb');
+  poly([-10,-15,25,-10,8,-3],'#8aa3b1');
+  poly([-56,1,44,1,44,3,25,8,-10,12,-40,8],'#d4e0e4');
+  poly([-10,12,25,8,8,4],'#b9c9cf');
+  poly([-12,-14,-2,-36,8,-12],'#6a8392');
+  poly([-12,-14,-2,-36,-4,-13],'#8aa3b1');
+  poly([-16,9,-6,26,2,9],'#5d7482');
+  poly([-54,3,-38,5,-46,8],'#3b2a30');
+  ctx.strokeStyle='rgba(13,24,32,.5)';ctx.lineWidth=1.2;ctx.beginPath();
+  for(const gx of[-30,-26,-22]){ctx.moveTo(gx,-4);ctx.lineTo(gx-2,4)}ctx.stroke();
+  ctx.fillStyle='#0d1820';ctx.fillRect(-45,-5,3,3);
+  ctx.restore();
+}
+function drawFish(f){
+  ctx.save();ctx.translate(f.x,f.y);ctx.scale(1.15,1.15);const sw=Math.sin(f.ph*2)*2;
+  poly([13,0,23,-7+sw,20,0,23,7+sw],'#e0654a');
+  poly([-15,0,-6,-6,9,-5,14,0],'#ff8a5b');
+  poly([-6,-6,9,-5,1,-1],'#ffa883');
+  poly([-15,0,14,0,8,5,-6,6],'#ffd3bb');
+  poly([-1,-5,4,-10,7,-5],'#e0654a');
+  ctx.fillStyle='#2a1610';ctx.fillRect(-10,-2,2,2);
+  ctx.restore();
+}
+function drawHeart(h){
+  ctx.save();ctx.translate(h.x,h.y);ctx.globalAlpha=.25;ctx.beginPath();ctx.arc(0,0,20,0,6.28);ctx.fillStyle='#ff5d73';ctx.fill();ctx.globalAlpha=1;
+  poly([0,13,-13,0,-10,-8,-4,-10,0,-5,4,-10,10,-8,13,0],'#ff5d73');
+  poly([0,-5,-4,-10,-10,-8,-13,0],'#ff8c9b');
+  ctx.restore();
+}
+function drawNet(n){
+  const {x,w,y0,y1}=n,h=y1-y0;
+  if(n.full&&x>W-10){
+    const cy=(SURF+H-FLOOR)/2, a=.55+.45*Math.sin(performance.now()/90);
+    ctx.save();ctx.globalAlpha=a;poly([W-12,cy-28,W-12,cy+28,W-44,cy],'#ff8a5b');ctx.restore();
+    ctx.fillStyle='#ff8a5b';ctx.font='700 13px "Chakra Petch", sans-serif';ctx.textAlign='right';ctx.fillText('NET AHEAD · JUMP',W-12,cy-38);
+  }
+  ctx.save();ctx.beginPath();ctx.rect(x,y0,w,h);ctx.clip();
+  ctx.fillStyle='rgba(216,201,163,.06)';ctx.fillRect(x,y0,w,h);
+  ctx.strokeStyle='rgba(216,201,163,.7)';ctx.lineWidth=1.2;ctx.beginPath();
+  for(let d=-h;d<w+h;d+=11){ctx.moveTo(x+d,y0);ctx.lineTo(x+d+h,y1);ctx.moveTo(x+d,y1);ctx.lineTo(x+d+h,y0)}
+  ctx.stroke();ctx.restore();
+  ctx.strokeStyle='#d8c9a3';ctx.lineWidth=2.5;ctx.strokeRect(x,y0,w,h);
+  for(let fx=x+4;fx<=x+w;fx+=14)poly([fx-5,y0,fx,y0-5,fx+5,y0,fx,y0+5],'#ff8a3d');
+  if(!n.top)for(let fx=x+6;fx<=x+w;fx+=16)poly([fx-4,y1-6,fx+4,y1-6,fx+3,y1,fx-3,y1],'#3b4650');
+  else{ctx.strokeStyle='rgba(216,201,163,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x+w/2,y1);ctx.lineTo(x+w/2,y1+10);ctx.stroke();poly([x+w/2-4,y1+10,x+w/2+4,y1+10,x+w/2,y1+17],'#3b4650')}
+}
+function render(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#051b27';ctx.fillRect(0,0,cw,ch);
+  ctx.setTransform(DPR*scale,0,0,DPR*scale,0,0);
+  if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+  drawBG();drawFloor();
+  for(const n of nets)drawNet(n);
+  for(const f of fish)drawFish(f);
+  for(const h of hearts)drawHeart(h);
+  ctx.strokeStyle='rgba(220,250,250,.45)';ctx.lineWidth=1;
+  for(const b of bubbles){ctx.globalAlpha=clamp(b.life,0,1);ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,6.28);ctx.stroke()}ctx.globalAlpha=1;
+  for(const s of sharks)drawShark(s);
+  for(const p of pod)drawOrcaBody(p.x,p.y,0,p.sc,p.dir,p.tail,p.fin,1,'#eef4f2','#d2dfdd');
+  drawOrca(orca);
+  if(state==='reunion'&&reunionT>2.6){
+    ctx.save();ctx.globalAlpha=clamp((reunionT-2.6)*1.5,0,1);ctx.textAlign='center';
+    ctx.font='700 30px "Chakra Petch", sans-serif';ctx.fillStyle='#e9f5f2';ctx.fillText('Quick found the pod!',W/2,SURF+70);
+    ctx.restore();
+  }
+  for(const p of parts){ctx.save();ctx.globalAlpha=clamp(p.life*2,0,1);ctx.translate(p.x,p.y);ctx.rotate(p.rot);poly([0,-p.s,p.s,p.s,-p.s,p.s],p.col);ctx.restore()}
+}
+
+/* ---------- HUD & cards ---------- */
+const heartSVG=on=>`<svg viewBox="0 0 20 18" class="${on?'':'off'}"><polygon points="10,17 1,8 2.5,2.5 7,1 10,4.5 13,1 17.5,2.5 19,8"/></svg>`;
+const muteIcon=()=>muted
+  ?'<svg viewBox="0 0 20 20"><polygon points="2,7 6,7 11,3 11,17 6,13 2,13"/><path d="M13 7l5 6M18 7l-5 6" stroke="currentColor" stroke-width="2" fill="none"/></svg>'
+  :'<svg viewBox="0 0 20 20"><polygon points="2,7 6,7 11,3 11,17 6,13 2,13"/><path d="M13.5 6.5q3 3.5 0 7M15.5 4q5 6 0 12" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>';
+function updateHUD(){
+  let h='';for(let i=0;i<Math.max(3,lives);i++)h+=heartSVG(i<lives);$('hearts').innerHTML=h;
+  $('score').textContent=score; $('lvname').textContent=`${lvl+1} / ${LEVELS.length} · ${LEVELS[lvl].name}`;
+  $('muteBtn').innerHTML=muteIcon(); $('muteBtn').setAttribute('aria-label',muted?'Unmute sound':'Mute sound');
+  $('hud').hidden=!(state==='play'||state==='paused'||state==='intro'||state==='clear');
+  $('jumpBtn').hidden=state!=='play';
+  musicVol();
+}
+const QUIN=`<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M8 16 L92 16 L50 96 Z"/><path d="M50 19 L50 47 M50 47 L34 67 M50 47 L66 67"/></g>
+  <rect x="5" y="7" width="90" height="11" rx="5" fill="currentColor"/>
+  <g fill="currentColor" font-family="Chakra Petch, sans-serif" font-weight="700" text-anchor="middle"><text x="33" y="44" font-size="20">Q</text><text x="67" y="44" font-size="20">X</text><text x="50" y="82" font-size="17">G</text></g></svg>`;
+const dots=()=>`<div class="dots">${LEVELS.map((_,i)=>`<i class="${i<=lvl?'on':''}"></i>`).join('')}</div>`;
+function show(html,low){$('card').innerHTML=html;$('overlay').classList.toggle('low',!!low);$('overlay').hidden=false;updateHUD();const b=$('card').querySelector('.btn');if(b&&!matchMedia('(pointer: coarse)').matches)b.focus({preventScroll:true})}
+function hide(){$('overlay').hidden=true;updateHUD()}
+function showMenu(){
+  state='menu'; orca.air=false; pod=[]; orca.x=orca.tx=Math.min(170,W*.35); orca.ty=H*.62; setMusic(0);
+  show(`<div class="brand">${QUIN}<span>QUIN X Games<small>presents</small></span></div>
+  <div class="eyebrow">Salish Sea · 5 straits</div><h1>Quick In The Ocean</h1>
+  <p>Quick is a baby orca who got separated from the pod. Swim west through five straits to find them in the open Pacific.</p>
+  <ul class="rules"><li><b>Steer</b>Drag anywhere on the screen</li><li><b>Eat</b>Chinook salmon, +10 each</li><li><b>Dodge</b>Sharks and fishing nets</li><li><b>Jump</b>Double-tap or press Jump to breach</li></ul>
+  <div class="stats"><div class="stat"><span>Best score</span><strong>${best}</strong></div><div class="stat"><span>Hearts</span><strong>3 / 5</strong></div></div>
+  <div class="actions"><button class="btn" data-act="start">Start swimming</button><button class="btn ghost" data-act="credits">Credits</button></div>
+  <div class="picker"><span>Or start at strait</span><div>${LEVELS.map((L,i)=>`<button class="pick" data-act="pick" data-l="${i}" aria-label="Start at ${L.name}">${i+1}</button>`).join('')}</div></div>`);
+}
+function showIntro(){
+  const L=LEVELS[lvl];
+  show(`${dots()}<div class="eyebrow">Strait ${lvl+1} of ${LEVELS.length}</div><h2>${L.name}</h2><p>${L.tip}</p>
+  <div class="actions"><button class="btn" data-act="go">Dive in</button></div><div class="hint">Drag anywhere to steer. Double-tap to jump.</div>`);
+}
+function showClear(bonus){
+  show(`${dots()}<div class="eyebrow">Strait cleared</div><h2>${LEVELS[lvl].name}</h2>
+  <div class="stats"><div class="stat"><span>Bonus</span><strong>+${bonus}</strong></div><div class="stat"><span>Score</span><strong>${score}</strong></div></div>
+  <p>One heart restored. Next up: ${LEVELS[lvl+1].name}.</p>
+  <div class="actions"><button class="btn" data-act="next">Next strait</button></div>`);
+}
+function showOver(){
+  show(`<div class="eyebrow">Out of hearts</div><h2>Quick got caught in ${LEVELS[lvl].name}</h2>
+  ${newBest?'<div class="new">New best score</div>':''}
+  <div class="stats"><div class="stat"><span>Score</span><strong>${score}</strong></div><div class="stat"><span>Best</span><strong>${best}</strong></div></div>
+  <div class="actions"><button class="btn" data-act="retry">Retry this strait</button><button class="btn ghost" data-act="menu">Main menu</button></div>`);
+}
+const CREDITS=`<dl class="credits"><div><dt>Designed by</dt><dd>Oliver Wagner and Oskar Wagner</dd></div><div><dt>Tested by</dt><dd>Amelia Wagner</dd></div></dl>`;
+function showWin(){
+  show(`<div class="eyebrow">Open Pacific reached</div><h2>Quick is home with the pod</h2>
+  ${newBest?'<div class="new">New best score</div>':''}
+  <div class="stats"><div class="stat"><span>Final score</span><strong>${score}</strong></div><div class="stat"><span>Best</span><strong>${best}</strong></div></div>
+  ${CREDITS}
+  <div class="actions"><button class="btn" data-act="start">Swim again</button><button class="btn ghost" data-act="menu">Main menu</button></div>
+  <div class="credit">${QUIN}A QUIN X Games production</div>`,true);
+}
+function showCredits(){
+  show(`<div class="brand">${QUIN}<span>QUIN X Games<small>presents</small></span></div>
+  <h2>Quick In The Ocean</h2>
+  ${CREDITS}
+  <div class="actions"><button class="btn ghost" data-act="menu">Back</button></div>`);
+}
+function pause(){if(state!=='play')return;state='paused';show(`<div class="eyebrow">Paused</div><h2>${LEVELS[lvl].name}</h2>
+  <div class="actions"><button class="btn" data-act="resume">Resume</button><button class="btn ghost" data-act="menu">Quit to menu</button></div>`)}
+
+let wl=null;
+function wake(){try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>wl=w).catch(()=>{})}catch(e){}}
+$('overlay').addEventListener('click',e=>{
+  const a=e.target.closest('[data-act]');if(!a)return; audio(); sfx.tap();
+  switch(a.dataset.act){
+    case'start':score=0;lives=3;wake();startLevel(0);break;
+    case'pick':score=0;lives=3;wake();startLevel(+a.dataset.l);break;
+    case'go':orcaCall('pulse');state='play';hide();break;
+    case'resume':state='play';hide();break;
+    case'next':startLevel(lvl+1);break;
+    case'retry':score=levelStartScore;lives=3;startLevel(lvl);break;
+    case'menu':showMenu();break;
+    case'credits':showCredits();break;
+  }
+});
+$('pauseBtn').addEventListener('click',()=>{audio();pause()});
+$('jumpBtn').addEventListener('pointerdown',e=>{e.preventDefault();jump()});
+$('jumpBtn').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();jump()}});
+$('muteBtn').addEventListener('click',()=>{audio();muted=!muted;store.set('orca-muted',muted?'1':'0');updateHUD()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();else if(state==='play'||state==='paused')wake()});
+
+/* ---------- touch steering (relative drag) ---------- */
+let drag=null, lastTap={t:0,x:0,y:0};
+cv.addEventListener('pointerdown',e=>{
+  const now=performance.now();
+  if(now-lastTap.t<320&&Math.hypot(e.clientX-lastTap.x,e.clientY-lastTap.y)<60){jump();lastTap.t=0}
+  else lastTap={t:now,x:e.clientX,y:e.clientY};
+  drag={x:e.clientX,y:e.clientY,id:e.pointerId};try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  const dx=(e.clientX-drag.x)/scale*1.3, dy=(e.clientY-drag.y)/scale*1.3; drag.x=e.clientX; drag.y=e.clientY;
+  if(state==='play'){orca.tx+=dx;if(!orca.air)orca.ty+=dy;clampOrca()}
+});
+const end=e=>{if(drag&&e.pointerId===drag.id)drag=null};
+cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+
+/* ---------- loop ---------- */
+let last=performance.now();
+function loop(now){const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(loop)}
+addEventListener('resize',resize);
+resize();
+
+window.claude?.hot?.snapshot?.(()=>({lvl,score,lives,levelStartScore,state}));
+function start(d){
+  if(d&&typeof d.lvl==='number'&&d.state&&!['menu','over','win','reunion'].includes(d.state)){score=d.levelStartScore||0;lives=d.lives||3;startLevel(clamp(d.lvl,0,LEVELS.length-1))}
+  else showMenu();
+  requestAnimationFrame(t=>{last=t;loop(t)});
+}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
