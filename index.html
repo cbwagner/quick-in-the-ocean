@@ -333,7 +333,7 @@ function spawnNet(L){
 
 /* ---------- flow ---------- */
 function startLevel(i){
-  lvl=i; t=0; sharks=[];fish=[];nets=[];hearts=[];parts=[];pod=[];
+  lvl=i; t=0; runSaved=false; sharks=[];fish=[];nets=[];hearts=[];parts=[];pod=[];
   timers={shark:1.4,fish:.3,net:LEVELS[i].net?2.2:0,bub:1,call:rand(4,8)};
   orca.x=orca.tx=Math.min(150,W*.3); orca.y=orca.ty=H/2+SURF/2; orca.inv=0; orca.ang=0; orca.air=false;
   levelStartScore=score; state='intro'; setMusic(i); updateHUD(); showIntro();
@@ -613,7 +613,7 @@ function showOver(){
 /* ---------- leaderboard (Supabase) ---------- */
 const LB={url:'https://hxbzkxqpbunngortvkil.supabase.co/rest/v1/scores',key:'sb_publishable_1xJefS4s4udEx5josK83JA_ZfQXpjWR'};
 const BAD=new Set('ASS FUK FCK FUC FUQ FUX SEX CUM KUM DIC DIK DIX COK COC FAG NIG NGR KKK TIT VAG WTF SHT PIS ANL CNT JIZ HOR XXX NAZ SUK BUM POO PEE PUB GAY HOE'.split(' '));
-let lbOK=false, lbTop=[], lbMine=null, lbSent=false;
+let lbOK=false, lbTop=[], lbMine=null, lbSent=false, runSaved=false;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function lbFetch(week){
   let q='?select=initials,score,strait,found_pod,created_at&order=score.desc,created_at.asc&limit=10';
@@ -636,13 +636,14 @@ function lbOffer(){
   const sc=score, won=state==='win', st=lvl+1;
   lbFetch(false).then(rows=>{lbTop=rows}).catch(()=>{}).then(()=>{
     const slot=$('lbSlot'); if(!slot)return;
-    if(qualifies(sc)){
+    if(sc>0&&!runSaved){
       const last=store.get('orca-initials')||'';
       slot.innerHTML=`<form class="lbentry" id="lbForm" autocomplete="off">
-        <label for="iniInput">Top 10 score! Enter your initials</label>
+        <label for="iniInput">${qualifies(sc)?'Top 10 score! Enter your initials':'Save your score with your initials'}</label>
         <input class="ini" id="iniInput" maxlength="3" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="AAA" value="${esc(last)}">
         <p class="msg" id="lbMsg" role="status"></p>
-        <button class="btn" type="submit" id="lbSave">Save my score</button></form>`;
+        <button class="btn" type="submit" id="lbSave">Save my score</button>
+        <button class="btn ghost" type="button" data-act="lbend">See the leaderboard</button></form>`;
       const inp=$('iniInput');
       inp.addEventListener('input',()=>{inp.value=inp.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3)});
       $('lbForm').addEventListener('submit',e=>{e.preventDefault();saveScore(inp.value,sc,st,won)});
@@ -658,14 +659,14 @@ function saveScore(v,sc,st,won){
   if(BAD.has(v)){msg.textContent='Please pick different initials.';return}
   lbSent=true; btn.disabled=true; btn.textContent='Saving…'; msg.textContent='';
   lbSubmit({initials:v,score:sc,strait:st,found_pod:won}).then(()=>{
-    store.set('orca-initials',v); lbMine={initials:v,score:sc}; sfx.heart(); showBoard(false,'end');
+    store.set('orca-initials',v); runSaved=true; lbMine={initials:v,score:sc}; sfx.heart(); showBoard(false,'end');
   }).catch(()=>{lbSent=false; btn.disabled=false; btn.textContent='Save my score'; msg.textContent='Couldn’t save. Check your internet connection and try again.'});
 }
 function showBoard(week,from){
   show(`<div class="eyebrow">Leaderboard</div><h2>Top swimmers</h2>
   <div class="tabs"><button class="tab${week?'':' on'}" data-act="lball" data-from="${from}">All time</button><button class="tab${week?' on':''}" data-act="lbweek" data-from="${from}">This week</button></div>
   <ol class="board" id="board"><li class="empty">Loading scores…</li></ol>
-  <div class="actions">${from==='end'?'<button class="btn" data-act="start">Swim again</button>':''}<button class="btn ghost" data-act="menu">Main menu</button></div>`);
+  <div class="actions">${from==='end'?`${!runSaved&&score>0?'<button class="btn" data-act="lbback">Back to save my score</button>':'<button class="btn ghost" data-act="lbback">Back</button>'}<button class="btn${!runSaved&&score>0?' ghost':''}" data-act="start">Swim again</button>`:''}<button class="btn ghost" data-act="menu">Main menu</button></div>`);
   lbFetch(week).then(rows=>{
     if(!week)lbTop=rows;
     const b=$('board'); if(!b)return;
@@ -713,6 +714,7 @@ $('overlay').addEventListener('click',e=>{
     case'credits':showCredits();break;
     case'board':showBoard(false,'menu');break;
     case'lbend':showBoard(false,'end');break;
+    case'lbback':state==='win'?showWin():showOver();break;
     case'lball':showBoard(false,a.dataset.from);break;
     case'lbweek':showBoard(true,a.dataset.from);break;
   }

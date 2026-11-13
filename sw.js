@@ -1,6 +1,6 @@
 // Quick In The Ocean: offline support.
 // Bump VERSION whenever you upload changed files so phones pick up the update.
-const VERSION = 'quick-v3';
+const VERSION = 'quick-v4';
 const FILES = [
   './',
   './index.html',
