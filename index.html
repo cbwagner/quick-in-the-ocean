@@ -67,7 +67,7 @@ input{-webkit-user-select:text;user-select:text}
 .ini{font-family:var(--display);font-weight:700;font-size:36px;letter-spacing:.5em;text-indent:.5em;text-align:center;text-transform:uppercase;width:100%;min-height:60px;border:0;border-bottom:3px solid var(--salmon);background:rgba(5,27,39,.6);color:var(--foam);caret-color:var(--salmon);border-radius:0}
 .ini:focus{outline:none;background:rgba(5,27,39,.9)}
 .msg{font-size:14px;color:var(--heart);min-height:1.2em;margin:0}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .tab{min-height:44px;border:1px solid var(--line);background:transparent;color:var(--mist);font-family:var(--display);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px;cursor:pointer}
 .tab.on{background:rgba(233,245,242,.12);color:var(--foam);border-color:var(--salmon)}
 .tab:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--salmon)}
@@ -615,9 +615,10 @@ const LB={url:'https://hxbzkxqpbunngortvkil.supabase.co/rest/v1/scores',key:'sb_
 const BAD=new Set('ASS FUK FCK FUC FUQ FUX SEX CUM KUM DIC DIK DIX COK COC FAG NIG NGR KKK TIT VAG WTF SHT PIS ANL CNT JIZ HOR XXX NAZ SUK BUM POO PEE PUB GAY HOE'.split(' '));
 let lbOK=false, lbTop=[], lbMine=null, lbSent=false, runSaved=false;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function lbFetch(week){
+async function lbFetch(range){
   let q='?select=initials,score,strait,found_pod,created_at&order=score.desc,created_at.asc&limit=10';
-  if(week)q+='&created_at=gte.'+new Date(Date.now()-7*864e5).toISOString();
+  if(range==='day'){const d=new Date();d.setHours(0,0,0,0);q+='&created_at=gte.'+d.toISOString()}
+  else if(range==='week')q+='&created_at=gte.'+new Date(Date.now()-7*864e5).toISOString();
   const r=await fetch(LB.url+q,{headers:{apikey:LB.key},cache:'no-store'});
   if(!r.ok)throw new Error('HTTP '+r.status);
   return r.json();
@@ -627,14 +628,14 @@ async function lbSubmit(row){
   if(!r.ok)throw new Error('HTTP '+r.status);
 }
 function lbProbe(){
-  lbFetch(false).then(rows=>{lbOK=true;lbTop=rows;document.querySelectorAll('[data-lb]').forEach(e=>e.hidden=false)}).catch(()=>{lbOK=false});
+  lbFetch('all').then(rows=>{lbOK=true;lbTop=rows;document.querySelectorAll('[data-lb]').forEach(e=>e.hidden=false)}).catch(()=>{lbOK=false});
 }
 const qualifies=s=>s>0&&(lbTop.length<10||s>lbTop[lbTop.length-1].score);
 function lbOffer(){
   lbSent=false;
   if(!lbOK)return;
   const sc=score, won=state==='win', st=lvl+1;
-  lbFetch(false).then(rows=>{lbTop=rows}).catch(()=>{}).then(()=>{
+  lbFetch('all').then(rows=>{lbTop=rows}).catch(()=>{}).then(()=>{
     const slot=$('lbSlot'); if(!slot)return;
     if(sc>0&&!runSaved){
       const last=store.get('orca-initials')||'';
@@ -659,18 +660,19 @@ function saveScore(v,sc,st,won){
   if(BAD.has(v)){msg.textContent='Please pick different initials.';return}
   lbSent=true; btn.disabled=true; btn.textContent='Saving…'; msg.textContent='';
   lbSubmit({initials:v,score:sc,strait:st,found_pod:won}).then(()=>{
-    store.set('orca-initials',v); runSaved=true; lbMine={initials:v,score:sc}; sfx.heart(); showBoard(false,'end');
+    store.set('orca-initials',v); runSaved=true; lbMine={initials:v,score:sc}; sfx.heart(); showBoard('day','end');
   }).catch(()=>{lbSent=false; btn.disabled=false; btn.textContent='Save my score'; msg.textContent='Couldn’t save. Check your internet connection and try again.'});
 }
-function showBoard(week,from){
+const RANGES=[['day','Today'],['week','This week'],['all','All time']];
+function showBoard(range,from){
   show(`<div class="eyebrow">Leaderboard</div><h2>Top swimmers</h2>
-  <div class="tabs"><button class="tab${week?'':' on'}" data-act="lball" data-from="${from}">All time</button><button class="tab${week?' on':''}" data-act="lbweek" data-from="${from}">This week</button></div>
+  <div class="tabs">${RANGES.map(([k,l])=>`<button class="tab${k===range?' on':''}" data-act="lbrange" data-range="${k}" data-from="${from}">${l}</button>`).join('')}</div>
   <ol class="board" id="board"><li class="empty">Loading scores…</li></ol>
   <div class="actions">${from==='end'?`${!runSaved&&score>0?'<button class="btn" data-act="lbback">Back to save my score</button>':'<button class="btn ghost" data-act="lbback">Back</button>'}<button class="btn${!runSaved&&score>0?' ghost':''}" data-act="start">Swim again</button>`:''}<button class="btn ghost" data-act="menu">Main menu</button></div>`);
-  lbFetch(week).then(rows=>{
-    if(!week)lbTop=rows;
+  lbFetch(range).then(rows=>{
+    if(range==='all')lbTop=rows;
     const b=$('board'); if(!b)return;
-    if(!rows.length){b.innerHTML=`<li class="empty">No scores ${week?'this week':'yet'}. Be the first on the board!</li>`;return}
+    if(!rows.length){b.innerHTML=`<li class="empty">No scores ${range==='day'?'today':range==='week'?'this week':'yet'}. Be the first on the board!</li>`;return}
     let marked=false;
     b.innerHTML=rows.map((r,i)=>{
       const me=!marked&&lbMine&&r.initials===lbMine.initials&&r.score===lbMine.score; if(me)marked=true;
@@ -712,11 +714,10 @@ $('overlay').addEventListener('click',e=>{
     case'retry':score=levelStartScore;lives=3;startLevel(lvl);break;
     case'menu':showMenu();break;
     case'credits':showCredits();break;
-    case'board':showBoard(false,'menu');break;
-    case'lbend':showBoard(false,'end');break;
+    case'board':showBoard('day','menu');break;
+    case'lbend':showBoard('day','end');break;
     case'lbback':state==='win'?showWin():showOver();break;
-    case'lball':showBoard(false,a.dataset.from);break;
-    case'lbweek':showBoard(true,a.dataset.from);break;
+    case'lbrange':showBoard(a.dataset.range,a.dataset.from);break;
   }
 });
 $('pauseBtn').addEventListener('click',()=>{audio();pause()});
