@@ -28,7 +28,7 @@ What's in this folder
 
 Updating the game later
    Replace the changed files on the host, then open sw.js and change
-   VERSION = 'quick-v5' to 'quick-v6' (and so on). Phones pick up the new
+   VERSION = 'quick-v6' to 'quick-v7' (and so on). Phones pick up the new
    version the next time the game is opened with internet.
 
 Fonts: Chakra Petch and Outfit, SIL Open Font License (licence files in fonts/).
